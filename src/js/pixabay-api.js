@@ -3,10 +3,10 @@ import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
 async function getImagesByQuery(query, page) {
-  let response = await axios.get(
-    `https://pixabay.com/api/?key=49659648-1ebf0f70bcfba68f8c305ff0f&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&per_page=15&page=${page}`
-  );
   try {
+    let response = await axios.get(
+      `https://pixabay.com/api/?key=49659648-1ebf0f70bcfba68f8c305ff0f&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&per_page=15&page=${page}`
+    );
     if (response.data.hits.length == 0) {
       iziToast.error({
         title: '',
@@ -17,7 +17,11 @@ async function getImagesByQuery(query, page) {
       return [response.data.hits, response.data.totalHits];
     }
   } catch (error) {
-    return error;
+    iziToast.error({
+      title: 'Error',
+      message: `Something went wrong: ${error.message}`,
+      position: 'topRight',
+    });
   }
 }
 

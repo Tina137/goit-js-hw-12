@@ -14,48 +14,60 @@ import {
 } from './js/render-functions';
 
 const form = document.querySelector('.form');
+let currentPage = 1;
+let totalPages = 0;
+let currentQuery = '';
 
-function create(userWrited, page) {
-  getImagesByQuery(userWrited, page)
-    .then(images => {
-      console.log(images);
-      createGallery(images[0]);
+async function create(userWrited, page) {
+  try {
+    console.log(page);
+    showLoader();
+    const result = await getImagesByQuery(userWrited, page);
+    const [images, totalHits] = result;
+    createGallery(images);
+    showLoadMoreButton();
+    totalPages = Math.ceil(totalHits / 15);
+    if (page < totalPages) {
       showLoadMoreButton();
-      let totalPages = Math.ceil(images[1] / 15);
-      if (page > totalPages) {
-        hideLoadMoreButton();
-        return iziToast.error({
+    } else {
+      hideLoadMoreButton();
+      if (page !== 1) {
+        iziToast.info({
           position: 'bottomRight',
-          message: "We're sorry, but you've reached the end of search results.",
+          message: "You've reached the end of search results.",
         });
       }
-    })
-    .catch(error => {
-      hideLoadMoreButton();
-      return error;
-    })
-    .finally(() => {
-      hideLoader();
-    });
+    }
+  } catch (error) {
+    hideLoadMoreButton();
+    return error;
+  } finally {
+    hideLoader();
+  }
 }
 
-form.addEventListener('submit', e => {
+form.addEventListener('submit', async e => {
   e.preventDefault();
   clearGallery();
+  hideLoadMoreButton();
   let userWrited = e.target.elements['search-text'];
-  if (userWrited.value.trim()) {
-    showLoader();
+  currentQuery = userWrited.value;
+  if (currentQuery.trim()) {
     let page = 1;
-    let query = userWrited.value;
-    moreButton.addEventListener('click', e => {
-      page++;
-      create(query, page);
-      let elem = document.querySelector('li:last-child');
-
-      let rect = elem.getBoundingClientRect();
-      window.scrollBy(0, rect.height);
-    });
-    create(query, page);
+    await create(currentQuery, page);
     userWrited.value = '';
+  }
+});
+moreButton.addEventListener('click', async () => {
+  console.log(currentQuery);
+  if (currentPage < totalPages) {
+    currentPage++;
+    await create(currentQuery, currentPage);
+
+    const elem = document.querySelector('li:last-child');
+    if (elem) {
+      const rect = elem.getBoundingClientRect();
+      window.scrollBy(0, rect.height);
+    }
   }
 });
