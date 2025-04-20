@@ -1,10 +1,5 @@
 import getImagesByQuery from './js/pixabay-api';
-import createGallery from './js/render-functions';
-
-import iziToast from 'izitoast';
-import 'izitoast/dist/css/iziToast.min.css';
-
-import {
+import createGallery, {
   showLoader,
   hideLoader,
   clearGallery,
@@ -12,6 +7,9 @@ import {
   hideLoadMoreButton,
   moreButton,
 } from './js/render-functions';
+
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
 
 const form = document.querySelector('.form');
 let currentPage = 1;
@@ -24,9 +22,18 @@ async function create(userWrited, page) {
     showLoader();
     const result = await getImagesByQuery(userWrited, page);
     const [images, totalHits] = result;
+
+    if (images.length === 0) {
+      iziToast.warning({
+        position: 'topRight',
+        message: 'Sorry, no images found. Please try another search.',
+      });
+      return;
+    }
+
     createGallery(images);
-    showLoadMoreButton();
     totalPages = Math.ceil(totalHits / 15);
+
     if (page < totalPages) {
       showLoadMoreButton();
     } else {
@@ -34,7 +41,7 @@ async function create(userWrited, page) {
       if (page !== 1) {
         iziToast.info({
           position: 'bottomRight',
-          message: "You've reached the end of search results.",
+          message: "We're sorry, but you've reached the end of search results.",
         });
       }
     }
@@ -51,15 +58,15 @@ form.addEventListener('submit', async e => {
   clearGallery();
   hideLoadMoreButton();
   let userWrited = e.target.elements['search-text'];
-  currentQuery = userWrited.value;
-  if (currentQuery.trim()) {
-    let page = 1;
-    await create(currentQuery, page);
+  currentQuery = userWrited.value.trim();
+  if (currentQuery) {
+    currentPage = 1;
+    await create(currentQuery, currentPage);
     userWrited.value = '';
   }
 });
+
 moreButton.addEventListener('click', async () => {
-  console.log(currentQuery);
   if (currentPage < totalPages) {
     currentPage++;
     await create(currentQuery, currentPage);
@@ -67,7 +74,10 @@ moreButton.addEventListener('click', async () => {
     const elem = document.querySelector('li:last-child');
     if (elem) {
       const rect = elem.getBoundingClientRect();
-      window.scrollBy(0, rect.height);
+      window.scrollBy({
+        top: rect.height * 2,
+        behavior: 'smooth',
+      });
     }
   }
 });
